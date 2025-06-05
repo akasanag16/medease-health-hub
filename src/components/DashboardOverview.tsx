@@ -1,8 +1,7 @@
-
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Pills, FileText } from "lucide-react"
+import { Calendar, Clock, Pill, FileText } from "lucide-react"
 
 // Mock data - in real app this would come from database
 const upcomingAppointments = [
@@ -78,7 +77,7 @@ export const DashboardOverview = () => {
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-green-500 rounded-lg">
-                <Pills className="w-6 h-6 text-white" />
+                <Pill className="w-6 h-6 text-white" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">Active Medications</p>
@@ -148,7 +147,7 @@ export const DashboardOverview = () => {
       <Card className="health-card-hover">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Pills className="w-5 h-5 text-green-600" />
+            <Pill className="w-5 h-5 text-green-600" />
             <span>Current Medications</span>
           </CardTitle>
         </CardHeader>

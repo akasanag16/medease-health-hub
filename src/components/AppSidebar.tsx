@@ -1,5 +1,4 @@
-
-import { Calendar, FileText, Heart, Home, Pills, Upload, User } from "lucide-react"
+import { Calendar, FileText, Heart, Home, Pill, Upload, User } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -26,7 +25,7 @@ const menuItems = [
   {
     title: "Medications",
     url: "#medications",
-    icon: Pills,
+    icon: Pill,
   },
   {
     title: "Mood Tracker",
