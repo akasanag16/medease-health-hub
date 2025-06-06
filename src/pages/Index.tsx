@@ -8,6 +8,7 @@ import { MoodChart } from "@/components/MoodChart"
 import { MedicalReports } from "@/components/MedicalReports"
 import { AppointmentManager } from "@/components/AppointmentManager"
 import { MedicationManager } from "@/components/MedicationManager"
+import { ProfileManager } from "@/components/ProfileManager"
 import { UserHeader } from "@/components/UserHeader"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -180,6 +181,20 @@ const Index = () => {
               </p>
             </div>
             <MedicationManager />
+          </div>
+        )
+      case 'profile':
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                Profile Settings 👤
+              </h1>
+              <p className="text-gray-600">
+                Manage your personal information and preferences
+              </p>
+            </div>
+            <ProfileManager />
           </div>
         )
       default:

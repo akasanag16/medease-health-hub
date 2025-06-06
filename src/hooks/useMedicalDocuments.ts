@@ -59,6 +59,7 @@ export const useMedicalDocuments = () => {
 
     setUploading(true);
     try {
+      // Create file path with user ID and timestamp
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
@@ -110,6 +111,11 @@ export const useMedicalDocuments = () => {
       return true;
     } catch (error) {
       console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
       return false;
     } finally {
       setUploading(false);
@@ -142,6 +148,11 @@ export const useMedicalDocuments = () => {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
     }
   };
 
