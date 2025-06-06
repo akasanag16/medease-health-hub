@@ -4,19 +4,23 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { DashboardOverview } from "@/components/DashboardOverview"
 import { MoodTracker } from "@/components/MoodTracker"
+import { MoodChart } from "@/components/MoodChart"
 import { MedicalReports } from "@/components/MedicalReports"
 import { AppointmentManager } from "@/components/AppointmentManager"
 import { MedicationManager } from "@/components/MedicationManager"
 import { UserHeader } from "@/components/UserHeader"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Bell } from "lucide-react"
 import { useMoodLogs } from '@/hooks/useMoodLogs'
 import { useProfile } from '@/hooks/useProfile'
+import { useNotifications } from '@/hooks/useNotifications'
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('dashboard')
   const { moodLogs } = useMoodLogs()
   const { profile } = useProfile()
+  const { notifications } = useNotifications()
 
   const displayName = profile?.first_name || 'there'
 
@@ -55,6 +59,35 @@ const Index = () => {
                 Here's your health overview for today
               </p>
             </div>
+
+            {/* Notifications */}
+            {notifications.length > 0 && (
+              <Card className="border-blue-200 bg-blue-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 text-blue-800">
+                    <Bell className="w-5 h-5" />
+                    <span>Notifications</span>
+                    <Badge variant="secondary">{notifications.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {notifications.slice(0, 3).map((notification) => (
+                      <div key={notification.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                        <div>
+                          <p className="font-medium text-sm">{notification.title}</p>
+                          <p className="text-sm text-gray-600">{notification.message}</p>
+                        </div>
+                        <Badge variant={notification.priority === 'high' ? 'destructive' : 'secondary'}>
+                          {notification.priority}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <DashboardOverview />
             <div className="mt-8">
               <MoodTracker />
@@ -73,6 +106,9 @@ const Index = () => {
               </p>
             </div>
             <MoodTracker />
+            
+            {/* Mood Charts */}
+            <MoodChart moodLogs={moodLogs} />
             
             {/* Recent Mood History */}
             <Card className="health-card-hover">
