@@ -1,15 +1,43 @@
-
 import React, { useState } from 'react'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { DashboardOverview } from "@/components/DashboardOverview"
 import { MoodTracker } from "@/components/MoodTracker"
 import { MedicalReports } from "@/components/MedicalReports"
+import { UserHeader } from "@/components/UserHeader"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useMoodLogs } from '@/hooks/useMoodLogs'
+import { useProfile } from '@/hooks/useProfile'
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('dashboard')
+  const { moodLogs } = useMoodLogs()
+  const { profile } = useProfile()
+
+  const displayName = profile?.first_name || 'there'
+
+  const getMoodEmoji = (moodLevel: string) => {
+    const emojiMap = {
+      'very_sad': '😢',
+      'sad': '😔',
+      'neutral': '😐',
+      'happy': '🙂',
+      'very_happy': '😄'
+    } as const;
+    return emojiMap[moodLevel as keyof typeof emojiMap] || '😐';
+  };
+
+  const getMoodLabel = (moodLevel: string) => {
+    const labelMap = {
+      'very_sad': 'Very sad',
+      'sad': 'Sad',
+      'neutral': 'Neutral',
+      'happy': 'Happy',
+      'very_happy': 'Very happy'
+    } as const;
+    return labelMap[moodLevel as keyof typeof labelMap] || 'Unknown';
+  };
 
   const renderContent = () => {
     switch (activeSection) {
@@ -18,7 +46,7 @@ const Index = () => {
           <div className="space-y-8">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                Welcome back, Sarah! 👋
+                Welcome back, {displayName}! 👋
               </h1>
               <p className="text-gray-600">
                 Here's your health overview for today
@@ -50,26 +78,24 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">🙂</span>
-                      <div>
-                        <p className="font-medium">Good day</p>
-                        <p className="text-sm text-gray-600">Feeling optimistic</p>
+                  {moodLogs.length > 0 ? (
+                    moodLogs.slice(0, 5).map((log) => (
+                      <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">{getMoodEmoji(log.mood_level)}</span>
+                          <div>
+                            <p className="font-medium">{getMoodLabel(log.mood_level)}</p>
+                            {log.note && <p className="text-sm text-gray-600">{log.note}</p>}
+                          </div>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {new Date(log.log_date).toLocaleDateString()}
+                        </span>
                       </div>
-                    </div>
-                    <span className="text-sm text-gray-500">Today</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">😐</span>
-                      <div>
-                        <p className="font-medium">Okay day</p>
-                        <p className="text-sm text-gray-600">Feeling neutral</p>
-                      </div>
-                    </div>
-                    <span className="text-sm text-gray-500">Yesterday</span>
-                  </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-center py-4">No mood entries yet. Start tracking your mood!</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -210,6 +236,7 @@ const Index = () => {
             <SidebarTrigger className="lg:hidden mb-4" />
           </div>
           <div className="max-w-7xl mx-auto">
+            <UserHeader />
             {renderContent()}
           </div>
         </main>

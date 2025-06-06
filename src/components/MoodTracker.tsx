@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
+import { useMoodLogs } from '@/hooks/useMoodLogs'
 
 const moodEmojis = [
   { emoji: '😢', label: 'Very Sad', value: 1 },
@@ -16,28 +16,19 @@ const moodEmojis = [
 export const MoodTracker = () => {
   const [selectedMood, setSelectedMood] = useState<number | null>(null)
   const [note, setNote] = useState('')
-  const { toast } = useToast()
+  const { saveMoodLog } = useMoodLogs()
 
-  const handleSaveMood = () => {
+  const handleSaveMood = async () => {
     if (selectedMood === null) {
-      toast({
-        title: "Please select a mood",
-        description: "Choose how you're feeling today",
-        variant: "destructive"
-      })
       return
     }
 
-    // Here we would save to database
-    console.log('Saving mood:', { mood: selectedMood, note, timestamp: new Date() })
+    const success = await saveMoodLog(selectedMood, note)
     
-    toast({
-      title: "Mood logged successfully!",
-      description: "Your mood has been recorded for today",
-    })
-    
-    setSelectedMood(null)
-    setNote('')
+    if (success) {
+      setSelectedMood(null)
+      setNote('')
+    }
   }
 
   return (
@@ -80,6 +71,7 @@ export const MoodTracker = () => {
         
         <Button 
           onClick={handleSaveMood}
+          disabled={selectedMood === null}
           className="w-full health-gradient text-white hover:opacity-90"
         >
           Save Mood Entry

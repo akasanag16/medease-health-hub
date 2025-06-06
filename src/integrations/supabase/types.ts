@@ -9,7 +9,301 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          appointment_date: string
+          appointment_time: string
+          created_at: string | null
+          doctor_name: string
+          id: string
+          location: string | null
+          notes: string | null
+          reason: string | null
+          specialty: string | null
+          status: Database["public"]["Enums"]["appointment_status"] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          appointment_date: string
+          appointment_time: string
+          created_at?: string | null
+          doctor_name: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          reason?: string | null
+          specialty?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          appointment_date?: string
+          appointment_time?: string
+          created_at?: string | null
+          doctor_name?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          reason?: string | null
+          specialty?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_results: {
+        Row: {
+          created_at: string | null
+          doctor_name: string | null
+          file_url: string | null
+          id: string
+          lab_name: string | null
+          notes: string | null
+          reference_range: string | null
+          result_value: string | null
+          status: Database["public"]["Enums"]["lab_result_status"] | null
+          test_date: string
+          test_name: string
+          unit: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          doctor_name?: string | null
+          file_url?: string | null
+          id?: string
+          lab_name?: string | null
+          notes?: string | null
+          reference_range?: string | null
+          result_value?: string | null
+          status?: Database["public"]["Enums"]["lab_result_status"] | null
+          test_date: string
+          test_name: string
+          unit?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          doctor_name?: string | null
+          file_url?: string | null
+          id?: string
+          lab_name?: string | null
+          notes?: string | null
+          reference_range?: string | null
+          result_value?: string | null
+          status?: Database["public"]["Enums"]["lab_result_status"] | null
+          test_date?: string
+          test_name?: string
+          unit?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_documents: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          document_type: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          upload_date: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          document_type?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          upload_date?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          document_type?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          upload_date?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medications: {
+        Row: {
+          created_at: string | null
+          dosage: string
+          end_date: string | null
+          frequency: Database["public"]["Enums"]["medication_frequency"]
+          id: string
+          instructions: string | null
+          is_active: boolean | null
+          name: string
+          prescribed_by: string | null
+          side_effects: string | null
+          start_date: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dosage: string
+          end_date?: string | null
+          frequency: Database["public"]["Enums"]["medication_frequency"]
+          id?: string
+          instructions?: string | null
+          is_active?: boolean | null
+          name: string
+          prescribed_by?: string | null
+          side_effects?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dosage?: string
+          end_date?: string | null
+          frequency?: Database["public"]["Enums"]["medication_frequency"]
+          id?: string
+          instructions?: string | null
+          is_active?: boolean | null
+          name?: string
+          prescribed_by?: string | null
+          side_effects?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mood_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          log_date: string | null
+          log_time: string | null
+          mood_level: Database["public"]["Enums"]["mood_level"]
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          log_date?: string | null
+          log_time?: string | null
+          mood_level: Database["public"]["Enums"]["mood_level"]
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          log_date?: string | null
+          log_time?: string | null
+          mood_level?: Database["public"]["Enums"]["mood_level"]
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mood_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          allergies: string[] | null
+          created_at: string | null
+          date_of_birth: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          medical_conditions: string[] | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allergies?: string[] | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          medical_conditions?: string[] | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allergies?: string[] | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          medical_conditions?: string[] | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +312,17 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      appointment_status: "scheduled" | "completed" | "cancelled" | "no_show"
+      lab_result_status: "normal" | "abnormal" | "pending" | "critical"
+      medication_frequency:
+        | "once_daily"
+        | "twice_daily"
+        | "three_times_daily"
+        | "four_times_daily"
+        | "as_needed"
+        | "weekly"
+        | "monthly"
+      mood_level: "very_sad" | "sad" | "neutral" | "happy" | "very_happy"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +437,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      appointment_status: ["scheduled", "completed", "cancelled", "no_show"],
+      lab_result_status: ["normal", "abnormal", "pending", "critical"],
+      medication_frequency: [
+        "once_daily",
+        "twice_daily",
+        "three_times_daily",
+        "four_times_daily",
+        "as_needed",
+        "weekly",
+        "monthly",
+      ],
+      mood_level: ["very_sad", "sad", "neutral", "happy", "very_happy"],
+    },
   },
 } as const
