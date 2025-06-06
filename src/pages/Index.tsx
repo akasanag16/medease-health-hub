@@ -1,9 +1,12 @@
+
 import React, { useState } from 'react'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { DashboardOverview } from "@/components/DashboardOverview"
 import { MoodTracker } from "@/components/MoodTracker"
 import { MedicalReports } from "@/components/MedicalReports"
+import { AppointmentManager } from "@/components/AppointmentManager"
+import { MedicationManager } from "@/components/MedicationManager"
 import { UserHeader } from "@/components/UserHeader"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -126,39 +129,7 @@ const Index = () => {
                 Manage your upcoming appointments
               </p>
             </div>
-            <Card className="health-card-hover">
-              <CardHeader>
-                <CardTitle>Upcoming Appointments</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 border rounded-lg bg-blue-50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-gray-800">Dr. Sarah Johnson</h3>
-                        <p className="text-sm text-gray-600">Cardiology</p>
-                        <p className="text-sm text-gray-600 mt-1">Follow-up consultation</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge className="bg-blue-100 text-blue-800">June 8, 10:30 AM</Badge>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-gray-800">Dr. Michael Chen</h3>
-                        <p className="text-sm text-gray-600">General Practice</p>
-                        <p className="text-sm text-gray-600 mt-1">Annual checkup</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="outline">June 12, 2:15 PM</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <AppointmentManager />
           </div>
         )
       case 'medications':
@@ -172,39 +143,7 @@ const Index = () => {
                 Track your current medications and schedules
               </p>
             </div>
-            <Card className="health-card-hover">
-              <CardHeader>
-                <CardTitle>Current Medications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 border rounded-lg bg-green-50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-gray-800">Lisinopril</h3>
-                        <p className="text-sm text-gray-600">10mg - Once daily</p>
-                        <p className="text-sm text-gray-600 mt-1">For blood pressure</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge className="bg-green-100 text-green-800">Next: 8:00 AM</Badge>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-gray-800">Metformin</h3>
-                        <p className="text-sm text-gray-600">500mg - Twice daily</p>
-                        <p className="text-sm text-gray-600 mt-1">For diabetes management</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="outline">Next: 6:00 PM</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <MedicationManager />
           </div>
         )
       default:
