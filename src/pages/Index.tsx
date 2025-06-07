@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
@@ -142,6 +141,7 @@ const Index = () => {
           </div>
         )
       case 'reports':
+      case 'upload':
         return (
           <div className="space-y-6">
             <div className="mb-8">
