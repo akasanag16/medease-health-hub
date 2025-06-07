@@ -1,5 +1,5 @@
 
-import { Calendar, FileText, Heart, Home, Pill, Upload, User } from "lucide-react"
+import { Calendar, FileText, Heart, Home, Pill, Upload, User, TestTube } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -34,8 +34,13 @@ const menuItems = [
     icon: Heart,
   },
   {
+    title: "Lab Results",
+    url: "#lab-results",
+    icon: TestTube,
+  },
+  {
     title: "Medical Reports",
-    url: "#upload",
+    url: "#medical-reports",
     icon: FileText,
   },
   {

@@ -1,10 +1,13 @@
+
 import React, { useState } from 'react'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { DashboardOverview } from "@/components/DashboardOverview"
 import { MoodTracker } from "@/components/MoodTracker"
 import { MoodChart } from "@/components/MoodChart"
-import { MedicalReports } from "@/components/MedicalReports"
+import { MedicalReportsViewer } from "@/components/MedicalReportsViewer"
+import { UploadDocuments } from "@/components/UploadDocuments"
+import { LabResults } from "@/components/LabResults"
 import { AppointmentManager } from "@/components/AppointmentManager"
 import { MedicationManager } from "@/components/MedicationManager"
 import { ProfileManager } from "@/components/ProfileManager"
@@ -140,8 +143,21 @@ const Index = () => {
             </Card>
           </div>
         )
-      case 'reports':
-      case 'upload':
+      case 'lab-results':
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                Lab Results 🧪
+              </h1>
+              <p className="text-gray-600">
+                View and manage your laboratory test results
+              </p>
+            </div>
+            <LabResults />
+          </div>
+        )
+      case 'medical-reports':
         return (
           <div className="space-y-6">
             <div className="mb-8">
@@ -149,10 +165,24 @@ const Index = () => {
                 Medical Reports 📋
               </h1>
               <p className="text-gray-600">
-                View and manage your medical documents
+                View and download your medical documents
               </p>
             </div>
-            <MedicalReports />
+            <MedicalReportsViewer />
+          </div>
+        )
+      case 'upload':
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                Upload Documents 📤
+              </h1>
+              <p className="text-gray-600">
+                Upload and organize your medical documents
+              </p>
+            </div>
+            <UploadDocuments />
           </div>
         )
       case 'appointments':
