@@ -35,7 +35,7 @@ const menuItems = [
   },
   {
     title: "Medical Reports",
-    url: "#reports",
+    url: "#upload",
     icon: FileText,
   },
   {
