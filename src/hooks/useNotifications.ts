@@ -27,9 +27,87 @@ export const useNotifications = () => {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      setupRealtimeSubscription();
+      
+      // Setup realtime subscription
+      const channel = supabase
+        .channel('notifications-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user?.id}`
+          },
+          (payload) => {
+            console.log('New notification received:', payload);
+            const newNotification = payload.new as any;
+            const typedNotification: Notification = {
+              id: newNotification.id,
+              title: newNotification.title,
+              message: newNotification.message,
+              type: ['info', 'warning', 'success', 'error'].includes(newNotification.type) ? newNotification.type : 'info',
+              priority: ['low', 'medium', 'high'].includes(newNotification.priority) ? newNotification.priority : 'medium',
+              is_read: newNotification.is_read,
+              related_table: newNotification.related_table,
+              related_id: newNotification.related_id,
+              created_at: newNotification.created_at,
+              read_at: newNotification.read_at
+            };
+            
+            setNotifications(prev => [typedNotification, ...prev]);
+            setUnreadCount(prev => prev + 1);
+            
+            // Show toast for high priority notifications
+            if (typedNotification.priority === 'high') {
+              toast({
+                title: typedNotification.title,
+                description: typedNotification.message,
+                duration: 10000,
+              });
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user?.id}`
+          },
+          (payload) => {
+            console.log('Notification updated:', payload);
+            const updatedNotification = payload.new as any;
+            const typedNotification: Notification = {
+              id: updatedNotification.id,
+              title: updatedNotification.title,
+              message: updatedNotification.message,
+              type: ['info', 'warning', 'success', 'error'].includes(updatedNotification.type) ? updatedNotification.type : 'info',
+              priority: ['low', 'medium', 'high'].includes(updatedNotification.priority) ? updatedNotification.priority : 'medium',
+              is_read: updatedNotification.is_read,
+              related_table: updatedNotification.related_table,
+              related_id: updatedNotification.related_id,
+              created_at: updatedNotification.created_at,
+              read_at: updatedNotification.read_at
+            };
+            
+            setNotifications(prev => 
+              prev.map(n => n.id === typedNotification.id ? typedNotification : n)
+            );
+            if (typedNotification.is_read) {
+              setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+          }
+        )
+        .subscribe();
+
+      // Cleanup function
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [user]);
+  }, [user, toast]);
 
   const fetchNotifications = async () => {
     try {
@@ -70,85 +148,6 @@ export const useNotifications = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const setupRealtimeSubscription = () => {
-    const channel = supabase
-      .channel('notifications-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user?.id}`
-        },
-        (payload) => {
-          console.log('New notification received:', payload);
-          const newNotification = payload.new as any;
-          const typedNotification: Notification = {
-            id: newNotification.id,
-            title: newNotification.title,
-            message: newNotification.message,
-            type: ['info', 'warning', 'success', 'error'].includes(newNotification.type) ? newNotification.type : 'info',
-            priority: ['low', 'medium', 'high'].includes(newNotification.priority) ? newNotification.priority : 'medium',
-            is_read: newNotification.is_read,
-            related_table: newNotification.related_table,
-            related_id: newNotification.related_id,
-            created_at: newNotification.created_at,
-            read_at: newNotification.read_at
-          };
-          
-          setNotifications(prev => [typedNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
-          
-          // Show toast for high priority notifications
-          if (typedNotification.priority === 'high') {
-            toast({
-              title: typedNotification.title,
-              description: typedNotification.message,
-              duration: 10000,
-            });
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user?.id}`
-        },
-        (payload) => {
-          console.log('Notification updated:', payload);
-          const updatedNotification = payload.new as any;
-          const typedNotification: Notification = {
-            id: updatedNotification.id,
-            title: updatedNotification.title,
-            message: updatedNotification.message,
-            type: ['info', 'warning', 'success', 'error'].includes(updatedNotification.type) ? updatedNotification.type : 'info',
-            priority: ['low', 'medium', 'high'].includes(updatedNotification.priority) ? updatedNotification.priority : 'medium',
-            is_read: updatedNotification.is_read,
-            related_table: updatedNotification.related_table,
-            related_id: updatedNotification.related_id,
-            created_at: updatedNotification.created_at,
-            read_at: updatedNotification.read_at
-          };
-          
-          setNotifications(prev => 
-            prev.map(n => n.id === typedNotification.id ? typedNotification : n)
-          );
-          if (typedNotification.is_read) {
-            setUnreadCount(prev => Math.max(0, prev - 1));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   };
 
   const markAsRead = async (notificationId: string) => {
