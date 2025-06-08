@@ -1,97 +1,165 @@
 
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useAppointments } from './useAppointments';
-import { useMedications } from './useMedications';
 
 interface Notification {
   id: string;
-  type: 'appointment' | 'medication';
   title: string;
   message: string;
-  time: string;
+  type: 'info' | 'warning' | 'success' | 'error';
   priority: 'low' | 'medium' | 'high';
+  is_read: boolean;
+  related_table: string | null;
+  related_id: string | null;
+  created_at: string;
+  read_at: string | null;
 }
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const { user } = useAuth();
   const { toast } = useToast();
-  const { appointments } = useAppointments();
-  const { medications } = useMedications();
 
   useEffect(() => {
-    const checkNotifications = () => {
-      const now = new Date();
-      const upcoming: Notification[] = [];
+    if (user) {
+      fetchNotifications();
+      setupRealtimeSubscription();
+    }
+  }, [user]);
 
-      // Check upcoming appointments (within next 24 hours)
-      appointments.forEach(appointment => {
-        if (appointment.status === 'scheduled') {
-          const appointmentDateTime = new Date(`${appointment.appointment_date}T${appointment.appointment_time}`);
-          const hoursUntil = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-          
-          if (hoursUntil > 0 && hoursUntil <= 24) {
-            upcoming.push({
-              id: `appointment-${appointment.id}`,
-              type: 'appointment',
-              title: 'Upcoming Appointment',
-              message: `${appointment.doctor_name} at ${appointment.appointment_time}`,
-              time: appointmentDateTime.toLocaleString(),
-              priority: hoursUntil <= 2 ? 'high' : hoursUntil <= 12 ? 'medium' : 'low'
-            });
-          }
-        }
-      });
+  const fetchNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      // Check medication reminders (active medications)
-      medications.forEach(medication => {
-        if (medication.is_active) {
-          const frequency = medication.frequency;
-          let shouldNotify = false;
-          let priority: 'low' | 'medium' | 'high' = 'medium';
-
-          // Simple logic for medication reminders based on frequency
-          if (frequency === 'once_daily' || frequency === 'twice_daily' || frequency === 'three_times_daily') {
-            // Daily medications - check if it's a typical medication time
-            const hour = now.getHours();
-            if (hour === 8 || hour === 12 || hour === 18) { // 8 AM, 12 PM, 6 PM
-              shouldNotify = true;
-              priority = 'high';
-            }
-          }
-
-          if (shouldNotify) {
-            upcoming.push({
-              id: `medication-${medication.id}`,
-              type: 'medication',
-              title: 'Medication Reminder',
-              message: `Time to take ${medication.name} (${medication.dosage})`,
-              time: now.toLocaleString(),
-              priority
-            });
-          }
-        }
-      });
-
-      setNotifications(upcoming);
-
-      // Show toast notifications for high priority items
-      upcoming
-        .filter(notif => notif.priority === 'high')
-        .forEach(notif => {
-          toast({
-            title: notif.title,
-            description: notif.message,
-            duration: 10000, // 10 seconds
-          });
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load notifications",
+          variant: "destructive"
         });
+      } else {
+        setNotifications(data || []);
+        setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setupRealtimeSubscription = () => {
+    const channel = supabase
+      .channel('notifications-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user?.id}`
+        },
+        (payload) => {
+          console.log('New notification received:', payload);
+          const newNotification = payload.new as Notification;
+          setNotifications(prev => [newNotification, ...prev]);
+          setUnreadCount(prev => prev + 1);
+          
+          // Show toast for high priority notifications
+          if (newNotification.priority === 'high') {
+            toast({
+              title: newNotification.title,
+              description: newNotification.message,
+              duration: 10000,
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user?.id}`
+        },
+        (payload) => {
+          console.log('Notification updated:', payload);
+          const updatedNotification = payload.new as Notification;
+          setNotifications(prev => 
+            prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+          );
+          if (updatedNotification.is_read) {
+            setUnreadCount(prev => Math.max(0, prev - 1));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
+  };
 
-    checkNotifications();
-    const interval = setInterval(checkNotifications, 60000); // Check every minute
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ 
+          is_read: true, 
+          read_at: new Date().toISOString() 
+        })
+        .eq('id', notificationId);
 
-    return () => clearInterval(interval);
-  }, [appointments, medications, toast]);
+      if (error) {
+        console.error('Error marking notification as read:', error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error:', error);
+      return false;
+    }
+  };
 
-  return { notifications };
+  const markAllAsRead = async () => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ 
+          is_read: true, 
+          read_at: new Date().toISOString() 
+        })
+        .eq('user_id', user?.id)
+        .eq('is_read', false);
+
+      if (error) {
+        console.error('Error marking all notifications as read:', error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error:', error);
+      return false;
+    }
+  };
+
+  return {
+    notifications,
+    loading,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    refetchNotifications: fetchNotifications
+  };
 };

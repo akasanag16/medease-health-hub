@@ -14,6 +14,7 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           created_at: string | null
+          doctor_id: string | null
           doctor_name: string
           id: string
           location: string | null
@@ -28,6 +29,7 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           created_at?: string | null
+          doctor_id?: string | null
           doctor_name: string
           id?: string
           location?: string | null
@@ -42,6 +44,7 @@ export type Database = {
           appointment_date?: string
           appointment_time?: string
           created_at?: string | null
+          doctor_id?: string | null
           doctor_name?: string
           id?: string
           location?: string | null
@@ -262,9 +265,79 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          priority: string
+          read_at: string | null
+          related_id: string | null
+          related_table: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          priority?: string
+          read_at?: string | null
+          related_id?: string | null
+          related_table?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          priority?: string
+          read_at?: string | null
+          related_id?: string | null
+          related_table?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      patient_doctor_assignments: {
+        Row: {
+          assigned_at: string | null
+          doctor_id: string
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          patient_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          doctor_id: string
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          patient_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          doctor_id?: string
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          patient_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           allergies: string[] | null
+          bio: string | null
           created_at: string | null
           date_of_birth: string | null
           emergency_contact_name: string | null
@@ -272,12 +345,16 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          license_number: string | null
           medical_conditions: string[] | null
           phone: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          specialization: string | null
           updated_at: string | null
         }
         Insert: {
           allergies?: string[] | null
+          bio?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           emergency_contact_name?: string | null
@@ -285,12 +362,16 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          license_number?: string | null
           medical_conditions?: string[] | null
           phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          specialization?: string | null
           updated_at?: string | null
         }
         Update: {
           allergies?: string[] | null
+          bio?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           emergency_contact_name?: string | null
@@ -298,8 +379,11 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          license_number?: string | null
           medical_conditions?: string[] | null
           phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          specialization?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -309,7 +393,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_notification: {
+        Args: {
+          p_user_id: string
+          p_title: string
+          p_message: string
+          p_type?: string
+          p_priority?: string
+          p_related_table?: string
+          p_related_id?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       appointment_status: "scheduled" | "completed" | "cancelled" | "no_show"
@@ -323,6 +418,7 @@ export type Database = {
         | "weekly"
         | "monthly"
       mood_level: "very_sad" | "sad" | "neutral" | "happy" | "very_happy"
+      user_role: "patient" | "doctor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -450,6 +546,7 @@ export const Constants = {
         "monthly",
       ],
       mood_level: ["very_sad", "sad", "neutral", "happy", "very_happy"],
+      user_role: ["patient", "doctor"],
     },
   },
 } as const
