@@ -48,8 +48,22 @@ export const useNotifications = () => {
           variant: "destructive"
         });
       } else {
-        setNotifications(data || []);
-        setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+        // Type-safe mapping to ensure correct types
+        const typedNotifications: Notification[] = (data || []).map(item => ({
+          id: item.id,
+          title: item.title,
+          message: item.message,
+          type: ['info', 'warning', 'success', 'error'].includes(item.type) ? item.type as 'info' | 'warning' | 'success' | 'error' : 'info',
+          priority: ['low', 'medium', 'high'].includes(item.priority) ? item.priority as 'low' | 'medium' | 'high' : 'medium',
+          is_read: item.is_read,
+          related_table: item.related_table,
+          related_id: item.related_id,
+          created_at: item.created_at,
+          read_at: item.read_at
+        }));
+        
+        setNotifications(typedNotifications);
+        setUnreadCount(typedNotifications.filter(n => !n.is_read).length);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -71,15 +85,28 @@ export const useNotifications = () => {
         },
         (payload) => {
           console.log('New notification received:', payload);
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
+          const newNotification = payload.new as any;
+          const typedNotification: Notification = {
+            id: newNotification.id,
+            title: newNotification.title,
+            message: newNotification.message,
+            type: ['info', 'warning', 'success', 'error'].includes(newNotification.type) ? newNotification.type : 'info',
+            priority: ['low', 'medium', 'high'].includes(newNotification.priority) ? newNotification.priority : 'medium',
+            is_read: newNotification.is_read,
+            related_table: newNotification.related_table,
+            related_id: newNotification.related_id,
+            created_at: newNotification.created_at,
+            read_at: newNotification.read_at
+          };
+          
+          setNotifications(prev => [typedNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
           // Show toast for high priority notifications
-          if (newNotification.priority === 'high') {
+          if (typedNotification.priority === 'high') {
             toast({
-              title: newNotification.title,
-              description: newNotification.message,
+              title: typedNotification.title,
+              description: typedNotification.message,
               duration: 10000,
             });
           }
@@ -95,11 +122,24 @@ export const useNotifications = () => {
         },
         (payload) => {
           console.log('Notification updated:', payload);
-          const updatedNotification = payload.new as Notification;
+          const updatedNotification = payload.new as any;
+          const typedNotification: Notification = {
+            id: updatedNotification.id,
+            title: updatedNotification.title,
+            message: updatedNotification.message,
+            type: ['info', 'warning', 'success', 'error'].includes(updatedNotification.type) ? updatedNotification.type : 'info',
+            priority: ['low', 'medium', 'high'].includes(updatedNotification.priority) ? updatedNotification.priority : 'medium',
+            is_read: updatedNotification.is_read,
+            related_table: updatedNotification.related_table,
+            related_id: updatedNotification.related_id,
+            created_at: updatedNotification.created_at,
+            read_at: updatedNotification.read_at
+          };
+          
           setNotifications(prev => 
-            prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+            prev.map(n => n.id === typedNotification.id ? typedNotification : n)
           );
-          if (updatedNotification.is_read) {
+          if (typedNotification.is_read) {
             setUnreadCount(prev => Math.max(0, prev - 1));
           }
         }

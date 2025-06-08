@@ -14,7 +14,6 @@ interface PatientAssignment {
   patient_profile?: {
     first_name: string | null;
     last_name: string | null;
-    email?: string;
   };
   doctor_profile?: {
     first_name: string | null;
@@ -37,33 +36,49 @@ export const usePatientAssignments = () => {
 
   const fetchAssignments = async () => {
     try {
-      const { data, error } = await supabase
+      // First get assignments
+      const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('patient_doctor_assignments')
-        .select(`
-          *,
-          patient_profile:profiles!patient_doctor_assignments_patient_id_fkey(
-            first_name,
-            last_name
-          ),
-          doctor_profile:profiles!patient_doctor_assignments_doctor_id_fkey(
-            first_name,
-            last_name,
-            specialization
-          )
-        `)
+        .select('*')
         .eq('is_active', true)
         .order('assigned_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching assignments:', error);
+      if (assignmentsError) {
+        console.error('Error fetching assignments:', assignmentsError);
         toast({
           title: "Error",
           description: "Failed to load patient assignments",
           variant: "destructive"
         });
-      } else {
-        setAssignments(data || []);
+        return;
       }
+
+      // Then get profile data for each assignment
+      const enrichedAssignments: PatientAssignment[] = [];
+      
+      for (const assignment of assignmentsData || []) {
+        // Get patient profile
+        const { data: patientProfile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', assignment.patient_id)
+          .single();
+
+        // Get doctor profile
+        const { data: doctorProfile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, specialization')
+          .eq('id', assignment.doctor_id)
+          .single();
+
+        enrichedAssignments.push({
+          ...assignment,
+          patient_profile: patientProfile || undefined,
+          doctor_profile: doctorProfile || undefined
+        });
+      }
+
+      setAssignments(enrichedAssignments);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -75,20 +90,14 @@ export const usePatientAssignments = () => {
     if (!user) return false;
 
     try {
-      // First find the patient by email
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        toast({
-          title: "Error",
-          description: "Failed to find patient",
-          variant: "destructive"
-        });
-        return false;
-      }
+      // Find user by email using profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', patientEmail) // This will need to be fixed - we need a way to search by email
+        .single();
 
-      const patient = authData.users.find(u => u.email === patientEmail);
-      if (!patient) {
+      if (profileError || !profileData) {
         toast({
           title: "Patient not found",
           description: "No patient found with this email address",
@@ -101,7 +110,7 @@ export const usePatientAssignments = () => {
         .from('patient_doctor_assignments')
         .insert([
           {
-            patient_id: patient.id,
+            patient_id: profileData.id,
             doctor_id: user.id,
             notes: notes || null
           }

@@ -13,6 +13,10 @@ interface Profile {
   emergency_contact_phone: string | null;
   medical_conditions: string[] | null;
   allergies: string[] | null;
+  role: 'patient' | 'doctor' | null;
+  specialization: string | null;
+  license_number: string | null;
+  bio: string | null;
 }
 
 export const useProfile = () => {
