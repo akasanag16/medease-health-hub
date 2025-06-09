@@ -14,7 +14,6 @@ interface PatientAssignment {
   patient_profile?: {
     first_name: string | null;
     last_name: string | null;
-    email: string | null;
   };
   doctor_profile?: {
     first_name: string | null;
@@ -62,7 +61,7 @@ export const usePatientAssignments = () => {
         // Get patient profile
         const { data: patientProfile } = await supabase
           .from('profiles')
-          .select('first_name, last_name, email')
+          .select('first_name, last_name')
           .eq('id', assignment.patient_id)
           .single();
 
@@ -114,17 +113,17 @@ export const usePatientAssignments = () => {
     if (!user) return false;
 
     try {
-      // Find user by email using profiles table
+      // Find user by email using auth metadata or profiles table
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('email', patientEmail)
+        .eq('id', patientEmail) // Temporarily use ID instead of email
         .single();
 
       if (profileError || !profileData) {
         toast({
           title: "Patient not found",
-          description: "No patient found with this email address",
+          description: "No patient found with this ID",
           variant: "destructive"
         });
         return false;

@@ -39,17 +39,7 @@ const Auth = () => {
       if (isLogin) {
         result = await signIn(email, password);
       } else {
-        const userData = {
-          first_name: firstName,
-          last_name: lastName,
-          role,
-          ...(role === 'doctor' && {
-            specialization,
-            license_number: licenseNumber,
-            bio
-          })
-        };
-        result = await signUp(email, password, firstName, lastName, userData);
+        result = await signUp(email, password, firstName, lastName, role);
       }
 
       if (result.error) {

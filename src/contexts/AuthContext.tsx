@@ -35,18 +35,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Update profile email if user signs in and email is missing
+        // Update profile if user signs in and profile is missing data
         if (session?.user && event === 'SIGNED_IN') {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('email')
+            .select('id, first_name, last_name')
             .eq('id', session.user.id)
             .single();
           
-          if (!profile?.email) {
+          if (!profile?.first_name) {
             await supabase
               .from('profiles')
-              .update({ email: session.user.email })
+              .update({ 
+                first_name: session.user.user_metadata?.first_name || null,
+                last_name: session.user.user_metadata?.last_name || null
+              })
               .eq('id', session.user.id);
           }
         }
