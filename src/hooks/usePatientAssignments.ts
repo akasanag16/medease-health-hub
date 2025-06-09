@@ -31,9 +31,28 @@ export const usePatientAssignments = () => {
   useEffect(() => {
     if (user) {
       fetchAssignments();
-      setupRealtimeSubscription();
+      
+      const channel = supabase
+        .channel(`patient-assignments-${user.id}-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'patient_doctor_assignments'
+          },
+          (payload) => {
+            console.log('Assignment update:', payload);
+            fetchAssignments(); // Refresh the full list with profile data
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [user]);
+  }, [user?.id]);
 
   const fetchAssignments = async () => {
     try {
@@ -85,28 +104,6 @@ export const usePatientAssignments = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const setupRealtimeSubscription = () => {
-    const channel = supabase
-      .channel('patient-assignments-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'patient_doctor_assignments'
-        },
-        (payload) => {
-          console.log('Assignment update:', payload);
-          fetchAssignments(); // Refresh the full list with profile data
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   };
 
   const assignPatient = async (patientEmail: string, notes?: string) => {

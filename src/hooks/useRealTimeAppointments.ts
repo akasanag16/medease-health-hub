@@ -26,9 +26,79 @@ export const useRealTimeAppointments = () => {
   useEffect(() => {
     if (user) {
       fetchAppointments();
-      setupRealtimeSubscription();
+      
+      const channel = supabase
+        .channel(`appointments-${user.id}-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'appointments',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('New appointment:', payload);
+            const newAppointment = payload.new as Appointment;
+            setAppointments(prev => [...prev, newAppointment].sort((a, b) => 
+              new Date(a.appointment_date + ' ' + a.appointment_time).getTime() - 
+              new Date(b.appointment_date + ' ' + b.appointment_time).getTime()
+            ));
+            
+            toast({
+              title: "New Appointment",
+              description: `Appointment with ${newAppointment.doctor_name} scheduled for ${newAppointment.appointment_date}`,
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'appointments',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Appointment updated:', payload);
+            const updatedAppointment = payload.new as Appointment;
+            setAppointments(prev => 
+              prev.map(apt => apt.id === updatedAppointment.id ? updatedAppointment : apt)
+            );
+            
+            toast({
+              title: "Appointment Updated",
+              description: `Your appointment with ${updatedAppointment.doctor_name} has been updated`,
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'appointments',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Appointment deleted:', payload);
+            const deletedAppointment = payload.old as Appointment;
+            setAppointments(prev => prev.filter(apt => apt.id !== deletedAppointment.id));
+            
+            toast({
+              title: "Appointment Cancelled",
+              description: `Appointment with ${deletedAppointment.doctor_name} has been cancelled`,
+              variant: "destructive"
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [user]);
+  }, [user?.id, toast]);
 
   const fetchAppointments = async () => {
     try {
@@ -54,79 +124,6 @@ export const useRealTimeAppointments = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const setupRealtimeSubscription = () => {
-    const channel = supabase
-      .channel('realtime-appointments')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'appointments',
-          filter: `user_id=eq.${user?.id}`
-        },
-        (payload) => {
-          console.log('New appointment:', payload);
-          const newAppointment = payload.new as Appointment;
-          setAppointments(prev => [...prev, newAppointment].sort((a, b) => 
-            new Date(a.appointment_date + ' ' + a.appointment_time).getTime() - 
-            new Date(b.appointment_date + ' ' + b.appointment_time).getTime()
-          ));
-          
-          toast({
-            title: "New Appointment",
-            description: `Appointment with ${newAppointment.doctor_name} scheduled for ${newAppointment.appointment_date}`,
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'appointments',
-          filter: `user_id=eq.${user?.id}`
-        },
-        (payload) => {
-          console.log('Appointment updated:', payload);
-          const updatedAppointment = payload.new as Appointment;
-          setAppointments(prev => 
-            prev.map(apt => apt.id === updatedAppointment.id ? updatedAppointment : apt)
-          );
-          
-          toast({
-            title: "Appointment Updated",
-            description: `Your appointment with ${updatedAppointment.doctor_name} has been updated`,
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'appointments',
-          filter: `user_id=eq.${user?.id}`
-        },
-        (payload) => {
-          console.log('Appointment deleted:', payload);
-          const deletedAppointment = payload.old as Appointment;
-          setAppointments(prev => prev.filter(apt => apt.id !== deletedAppointment.id));
-          
-          toast({
-            title: "Appointment Cancelled",
-            description: `Appointment with ${deletedAppointment.doctor_name} has been cancelled`,
-            variant: "destructive"
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   };
 
   const createAppointment = async (appointmentData: Omit<Appointment, 'id' | 'created_at'>) => {

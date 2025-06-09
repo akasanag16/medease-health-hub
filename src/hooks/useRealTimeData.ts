@@ -28,58 +28,40 @@ export const useRealTimeData = () => {
     // Initial data fetch
     fetchAllData();
 
-    // Set up real-time subscriptions
-    const channels = [
-      supabase
-        .channel('appointments-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'appointments' },
-          () => fetchAppointments()
-        )
-        .subscribe(),
-
-      supabase
-        .channel('medications-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'medications' },
-          () => fetchMedications()
-        )
-        .subscribe(),
-
-      supabase
-        .channel('lab-results-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'lab_results' },
-          () => fetchLabResults()
-        )
-        .subscribe(),
-
-      supabase
-        .channel('mood-logs-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'mood_logs' },
-          () => fetchMoodLogs()
-        )
-        .subscribe(),
-
-      supabase
-        .channel('notifications-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'notifications' },
-          () => fetchNotifications()
-        )
-        .subscribe()
-    ];
+    // Set up a single real-time subscription for all tables
+    const channel = supabase
+      .channel(`realtime-data-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments', filter: `user_id=eq.${user.id}` },
+        () => fetchAppointments()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'medications', filter: `user_id=eq.${user.id}` },
+        () => fetchMedications()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lab_results', filter: `user_id=eq.${user.id}` },
+        () => fetchLabResults()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'mood_logs', filter: `user_id=eq.${user.id}` },
+        () => fetchMoodLogs()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        () => fetchNotifications()
+      )
+      .subscribe();
 
     return () => {
-      channels.forEach(channel => supabase.removeChannel(channel));
+      supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user?.id]);
 
   const fetchAllData = async () => {
     setLoading(true);
