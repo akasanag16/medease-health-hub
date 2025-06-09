@@ -1,8 +1,7 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useRealTimeManager } from './useRealTimeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PatientAssignment {
   id: string;
@@ -23,98 +22,19 @@ interface PatientAssignment {
 }
 
 export const usePatientAssignments = () => {
-  const [assignments, setAssignments] = useState<PatientAssignment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading } = useRealTimeManager();
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      fetchAssignments();
-      
-      const channel = supabase
-        .channel(`patient-assignments-${user.id}-${Date.now()}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'patient_doctor_assignments'
-          },
-          (payload) => {
-            console.log('Assignment update:', payload);
-            fetchAssignments(); // Refresh the full list with profile data
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user?.id]);
-
-  const fetchAssignments = async () => {
-    try {
-      // First get assignments
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('patient_doctor_assignments')
-        .select('*')
-        .eq('is_active', true)
-        .order('assigned_at', { ascending: false });
-
-      if (assignmentsError) {
-        console.error('Error fetching assignments:', assignmentsError);
-        toast({
-          title: "Error",
-          description: "Failed to load patient assignments",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Then get profile data for each assignment
-      const enrichedAssignments: PatientAssignment[] = [];
-      
-      for (const assignment of assignmentsData || []) {
-        // Get patient profile
-        const { data: patientProfile } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', assignment.patient_id)
-          .single();
-
-        // Get doctor profile
-        const { data: doctorProfile } = await supabase
-          .from('profiles')
-          .select('first_name, last_name, specialization')
-          .eq('id', assignment.doctor_id)
-          .single();
-
-        enrichedAssignments.push({
-          ...assignment,
-          patient_profile: patientProfile || undefined,
-          doctor_profile: doctorProfile || undefined
-        });
-      }
-
-      setAssignments(enrichedAssignments);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const assignPatient = async (patientEmail: string, notes?: string) => {
+  const assignPatient = async (patientId: string, notes?: string) => {
     if (!user) return false;
 
     try {
-      // Find user by email using auth metadata or profiles table
+      // Check if patient exists in profiles
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('id', patientEmail) // Temporarily use ID instead of email
+        .eq('id', patientId)
         .single();
 
       if (profileError || !profileData) {
@@ -186,10 +106,10 @@ export const usePatientAssignments = () => {
   };
 
   return {
-    assignments,
+    assignments: data.patientAssignments,
     loading,
     assignPatient,
     unassignPatient,
-    refetchAssignments: fetchAssignments
+    refetchAssignments: () => {} // Will be handled by centralized manager
   };
 };

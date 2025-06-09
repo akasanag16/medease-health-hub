@@ -17,10 +17,14 @@ import { RealTimeDashboard } from "@/components/RealTimeDashboard";
 import { MedicationReminderWidget } from "@/components/MedicationReminderWidget";
 import { RoleBasedRoute } from "@/components/RoleBasedRoute";
 import { useProfile } from "@/hooks/useProfile";
+import { useRealTimeManager } from "@/hooks/useRealTimeManager";
 
 const Index = () => {
   const [activeSection, setActiveSection] = React.useState('dashboard');
   const { profile } = useProfile();
+  
+  // Initialize real-time manager for the entire application
+  useRealTimeManager();
 
   const handleSectionChange = (section: string) => {
     setActiveSection(section.replace('#', ''));

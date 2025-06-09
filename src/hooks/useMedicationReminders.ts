@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useRealTimeManager } from './useRealTimeManager';
 import { useToast } from '@/hooks/use-toast';
 
 interface Medication {
@@ -27,86 +26,22 @@ interface MedicationReminder {
 }
 
 export const useMedicationReminders = () => {
-  const [medications, setMedications] = useState<Medication[]>([]);
+  const { data, loading } = useRealTimeManager();
   const [todayReminders, setTodayReminders] = useState<MedicationReminder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
-      fetchMedications();
-      setupRealtimeSubscription();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (medications.length > 0) {
+    if (data.medications.length > 0) {
       generateTodayReminders();
       setupReminderNotifications();
     }
-  }, [medications]);
-
-  const fetchMedications = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('medications')
-        .select('*')
-        .eq('user_id', user?.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching medications:', error);
-      } else {
-        setMedications(data || []);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const setupRealtimeSubscription = () => {
-    const channel = supabase
-      .channel('realtime-medications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'medications',
-          filter: `user_id=eq.${user?.id}`
-        },
-        (payload) => {
-          console.log('Medication update:', payload);
-          if (payload.eventType === 'INSERT') {
-            const newMedication = payload.new as Medication;
-            setMedications(prev => [newMedication, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedMedication = payload.new as Medication;
-            setMedications(prev => 
-              prev.map(med => med.id === updatedMedication.id ? updatedMedication : med)
-            );
-          } else if (payload.eventType === 'DELETE') {
-            const deletedMedication = payload.old as Medication;
-            setMedications(prev => prev.filter(med => med.id !== deletedMedication.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
+  }, [data.medications]);
 
   const generateTodayReminders = () => {
     const today = new Date();
     const reminders: MedicationReminder[] = [];
 
-    medications.forEach(medication => {
+    data.medications.forEach(medication => {
       if (!medication.is_active) return;
 
       const times = getScheduledTimes(medication.frequency);
@@ -191,10 +126,10 @@ export const useMedicationReminders = () => {
   };
 
   return {
-    medications,
+    medications: data.medications,
     todayReminders,
     loading,
     markMedicationTaken,
-    refetchMedications: fetchMedications
+    refetchMedications: () => {} // Will be handled by centralized manager
   };
 };
