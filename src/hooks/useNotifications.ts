@@ -28,9 +28,9 @@ export const useNotifications = () => {
     if (user) {
       fetchNotifications();
       
-      // Setup realtime subscription
+      // Setup realtime subscription with proper cleanup
       const channel = supabase
-        .channel('notifications-changes')
+        .channel(`notifications-${user.id}`)
         .on(
           'postgres_changes',
           {

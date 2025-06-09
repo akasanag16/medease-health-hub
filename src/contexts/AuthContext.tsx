@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, firstName?: string, lastName?: string, userData?: any) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, firstName?: string, lastName?: string, role?: 'patient' | 'doctor') => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -30,10 +30,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Update profile email if user signs in and email is missing
+        if (session?.user && event === 'SIGNED_IN') {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (!profile?.email) {
+            await supabase
+              .from('profiles')
+              .update({ email: session.user.email })
+              .eq('id', session.user.id);
+          }
+        }
+        
         setLoading(false);
       }
     );
@@ -48,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, firstName?: string, lastName?: string, userData?: any) => {
+  const signUp = async (email: string, password: string, firstName?: string, lastName?: string, role: 'patient' | 'doctor' = 'patient') => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -59,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         data: {
           first_name: firstName,
           last_name: lastName,
-          ...(userData || {})
+          role: role
         }
       }
     });

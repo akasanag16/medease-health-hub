@@ -13,6 +13,9 @@ import { UploadDocuments } from "@/components/UploadDocuments";
 import { ProfileManager } from "@/components/ProfileManager";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { DoctorDashboard } from "@/components/DoctorDashboard";
+import { RealTimeDashboard } from "@/components/RealTimeDashboard";
+import { MedicationReminderWidget } from "@/components/MedicationReminderWidget";
+import { RoleBasedRoute } from "@/components/RoleBasedRoute";
 import { useProfile } from "@/hooks/useProfile";
 
 const Index = () => {
@@ -40,18 +43,41 @@ const Index = () => {
   const renderActiveSection = () => {
     // Check if user is a doctor and show doctor dashboard for dashboard section
     if (activeSection === 'dashboard' && profile?.role === 'doctor') {
-      return <DoctorDashboard />;
+      return (
+        <div className="space-y-6">
+          <RealTimeDashboard />
+          <DoctorDashboard />
+        </div>
+      );
     }
 
     switch (activeSection) {
       case 'dashboard':
-        return <DashboardOverview />;
+        return (
+          <div className="space-y-6">
+            <RealTimeDashboard />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <DashboardOverview />
+              </div>
+              <div>
+                <RoleBasedRoute allowedRoles={['patient']}>
+                  <MedicationReminderWidget />
+                </RoleBasedRoute>
+              </div>
+            </div>
+          </div>
+        );
       case 'appointments':
         return <AppointmentManager />;
       case 'medications':
         return <MedicationManager />;
       case 'mood':
-        return <MoodTracker />;
+        return (
+          <RoleBasedRoute allowedRoles={['patient']}>
+            <MoodTracker />
+          </RoleBasedRoute>
+        );
       case 'lab-results':
         return <LabResults />;
       case 'medical-reports':
@@ -63,7 +89,26 @@ const Index = () => {
       case 'notifications':
         return <NotificationCenter />;
       default:
-        return profile?.role === 'doctor' ? <DoctorDashboard /> : <DashboardOverview />;
+        return profile?.role === 'doctor' ? (
+          <div className="space-y-6">
+            <RealTimeDashboard />
+            <DoctorDashboard />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <RealTimeDashboard />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <DashboardOverview />
+              </div>
+              <div>
+                <RoleBasedRoute allowedRoles={['patient']}>
+                  <MedicationReminderWidget />
+                </RoleBasedRoute>
+              </div>
+            </div>
+          </div>
+        );
     }
   };
 

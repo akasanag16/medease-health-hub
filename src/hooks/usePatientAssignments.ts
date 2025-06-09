@@ -14,6 +14,7 @@ interface PatientAssignment {
   patient_profile?: {
     first_name: string | null;
     last_name: string | null;
+    email: string | null;
   };
   doctor_profile?: {
     first_name: string | null;
@@ -31,6 +32,7 @@ export const usePatientAssignments = () => {
   useEffect(() => {
     if (user) {
       fetchAssignments();
+      setupRealtimeSubscription();
     }
   }, [user]);
 
@@ -60,7 +62,7 @@ export const usePatientAssignments = () => {
         // Get patient profile
         const { data: patientProfile } = await supabase
           .from('profiles')
-          .select('first_name, last_name')
+          .select('first_name, last_name, email')
           .eq('id', assignment.patient_id)
           .single();
 
@@ -86,6 +88,28 @@ export const usePatientAssignments = () => {
     }
   };
 
+  const setupRealtimeSubscription = () => {
+    const channel = supabase
+      .channel('patient-assignments-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'patient_doctor_assignments'
+        },
+        (payload) => {
+          console.log('Assignment update:', payload);
+          fetchAssignments(); // Refresh the full list with profile data
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
   const assignPatient = async (patientEmail: string, notes?: string) => {
     if (!user) return false;
 
@@ -94,7 +118,7 @@ export const usePatientAssignments = () => {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('id', patientEmail) // This will need to be fixed - we need a way to search by email
+        .eq('email', patientEmail)
         .single();
 
       if (profileError || !profileData) {
@@ -129,7 +153,6 @@ export const usePatientAssignments = () => {
           title: "Patient assigned!",
           description: "Patient has been successfully assigned to you",
         });
-        fetchAssignments();
         return true;
       }
     } catch (error) {
@@ -158,7 +181,6 @@ export const usePatientAssignments = () => {
           title: "Patient unassigned",
           description: "Patient has been unassigned",
         });
-        fetchAssignments();
         return true;
       }
     } catch (error) {
