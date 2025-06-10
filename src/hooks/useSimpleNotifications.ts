@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,9 +65,10 @@ export const useSimpleNotifications = () => {
 
     fetchNotifications();
 
-    // Simple real-time subscription
+    // Create unique channel name to avoid conflicts
+    const channelName = `simple-notifications-${user.id}-${Date.now()}`;
     const channel = supabase
-      .channel(`notifications-${user.id}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
