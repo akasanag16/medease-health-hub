@@ -11,15 +11,6 @@ interface PatientAssignment {
   assigned_at: string;
   is_active: boolean;
   notes: string | null;
-  patient_profile?: {
-    first_name: string | null;
-    last_name: string | null;
-  };
-  doctor_profile?: {
-    first_name: string | null;
-    last_name: string | null;
-    specialization: string | null;
-  };
 }
 
 export const usePatientAssignments = () => {
@@ -41,11 +32,7 @@ export const usePatientAssignments = () => {
     try {
       const { data, error } = await supabase
         .from('patient_doctor_assignments')
-        .select(`
-          *,
-          patient_profile:profiles!patient_doctor_assignments_patient_id_fkey(first_name, last_name),
-          doctor_profile:profiles!patient_doctor_assignments_doctor_id_fkey(first_name, last_name, specialization)
-        `)
+        .select('*')
         .eq('doctor_id', user?.id)
         .eq('is_active', true);
 
