@@ -1,7 +1,8 @@
-import { useRealTimeManager } from './useRealTimeManager';
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 interface PatientAssignment {
   id: string;
@@ -22,15 +23,48 @@ interface PatientAssignment {
 }
 
 export const usePatientAssignments = () => {
-  const { data, loading } = useRealTimeManager();
+  const [assignments, setAssignments] = useState<PatientAssignment[]>([]);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    fetchAssignments();
+  }, [user?.id]);
+
+  const fetchAssignments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('patient_doctor_assignments')
+        .select(`
+          *,
+          patient_profile:profiles!patient_doctor_assignments_patient_id_fkey(first_name, last_name),
+          doctor_profile:profiles!patient_doctor_assignments_doctor_id_fkey(first_name, last_name, specialization)
+        `)
+        .eq('doctor_id', user?.id)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error fetching assignments:', error);
+      } else {
+        setAssignments(data || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const assignPatient = async (patientId: string, notes?: string) => {
     if (!user) return false;
 
     try {
-      // Check if patient exists in profiles
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id')
@@ -69,6 +103,7 @@ export const usePatientAssignments = () => {
           title: "Patient assigned!",
           description: "Patient has been successfully assigned to you",
         });
+        await fetchAssignments();
         return true;
       }
     } catch (error) {
@@ -97,6 +132,7 @@ export const usePatientAssignments = () => {
           title: "Patient unassigned",
           description: "Patient has been unassigned",
         });
+        await fetchAssignments();
         return true;
       }
     } catch (error) {
@@ -106,10 +142,10 @@ export const usePatientAssignments = () => {
   };
 
   return {
-    assignments: data.patientAssignments,
+    assignments,
     loading,
     assignPatient,
     unassignPatient,
-    refetchAssignments: () => {} // Will be handled by centralized manager
+    refetchAssignments: fetchAssignments
   };
 };

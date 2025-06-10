@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { useRealTimeManager } from './useRealTimeManager';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface Medication {
@@ -26,22 +27,52 @@ interface MedicationReminder {
 }
 
 export const useMedicationReminders = () => {
-  const { data, loading } = useRealTimeManager();
+  const [medications, setMedications] = useState<Medication[]>([]);
   const [todayReminders, setTodayReminders] = useState<MedicationReminder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (data.medications.length > 0) {
-      generateTodayReminders();
-      setupReminderNotifications();
+    if (!user?.id) {
+      setLoading(false);
+      return;
     }
-  }, [data.medications]);
+
+    fetchMedications();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (medications.length > 0) {
+      generateTodayReminders();
+    }
+  }, [medications]);
+
+  const fetchMedications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('medications')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error fetching medications:', error);
+      } else {
+        setMedications(data || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const generateTodayReminders = () => {
     const today = new Date();
     const reminders: MedicationReminder[] = [];
 
-    data.medications.forEach(medication => {
+    medications.forEach(medication => {
       if (!medication.is_active) return;
 
       const times = getScheduledTimes(medication.frequency);
@@ -90,24 +121,6 @@ export const useMedicationReminders = () => {
     return times;
   };
 
-  const setupReminderNotifications = () => {
-    const now = new Date();
-    
-    todayReminders.forEach(reminder => {
-      if (reminder.scheduledTime > now && !reminder.taken) {
-        const timeUntilReminder = reminder.scheduledTime.getTime() - now.getTime();
-        
-        setTimeout(() => {
-          toast({
-            title: "Medication Reminder",
-            description: `Time to take ${reminder.medicationName} (${reminder.dosage})`,
-            duration: 30000,
-          });
-        }, timeUntilReminder);
-      }
-    });
-  };
-
   const markMedicationTaken = (medicationId: string, scheduledTime: Date) => {
     setTodayReminders(prev => 
       prev.map(reminder => 
@@ -126,10 +139,10 @@ export const useMedicationReminders = () => {
   };
 
   return {
-    medications: data.medications,
+    medications,
     todayReminders,
     loading,
     markMedicationTaken,
-    refetchMedications: () => {} // Will be handled by centralized manager
+    refetchMedications: fetchMedications
   };
 };

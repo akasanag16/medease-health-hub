@@ -1,7 +1,8 @@
-import { useRealTimeManager } from './useRealTimeManager';
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 interface Appointment {
   id: string;
@@ -17,9 +18,39 @@ interface Appointment {
 }
 
 export const useRealTimeAppointments = () => {
-  const { data, loading } = useRealTimeManager();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    fetchAppointments();
+  }, [user?.id]);
+
+  const fetchAppointments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('appointment_date', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching appointments:', error);
+      } else {
+        setAppointments(data || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const createAppointment = async (appointmentData: Omit<Appointment, 'id' | 'created_at'>) => {
     try {
@@ -41,6 +72,8 @@ export const useRealTimeAppointments = () => {
         });
         return false;
       }
+      
+      await fetchAppointments();
       return true;
     } catch (error) {
       console.error('Error:', error);
@@ -64,6 +97,8 @@ export const useRealTimeAppointments = () => {
         });
         return false;
       }
+      
+      await fetchAppointments();
       return true;
     } catch (error) {
       console.error('Error:', error);
@@ -72,10 +107,10 @@ export const useRealTimeAppointments = () => {
   };
 
   return {
-    appointments: data.appointments,
+    appointments,
     loading,
     createAppointment,
     updateAppointment,
-    refetchAppointments: () => {} // Will be handled by centralized manager
+    refetchAppointments: fetchAppointments
   };
 };

@@ -63,7 +63,7 @@ const Index = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-blue-50 via-white to-green-50">
-        <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <AppSidebar />
         <main className="flex-1 flex flex-col">
           <UserHeader />
           <div className="flex-1 p-6 overflow-y-auto">

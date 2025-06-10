@@ -1,14 +1,20 @@
-// This hook has been deprecated and replaced by useRealTimeManager
-// Keeping for backwards compatibility but redirecting to new implementation
 
-import { useRealTimeManager } from './useRealTimeManager';
+import { useSimpleNotifications } from './useSimpleNotifications';
 
+// Simple replacement for the complex useRealTimeManager
 export const useRealTimeData = () => {
-  const { data, loading, connectionStatus } = useRealTimeManager();
+  const { notifications, loading, unreadCount } = useSimpleNotifications();
   
   return {
-    data,
+    data: {
+      notifications,
+      appointments: [],
+      medications: [],
+      labResults: [],
+      moodLogs: [],
+      patientAssignments: []
+    },
     loading,
-    isConnected: connectionStatus === 'connected'
+    isConnected: true // Simplified for now
   };
 };
