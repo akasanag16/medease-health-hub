@@ -28,44 +28,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+        } else if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+      } catch (error) {
+        console.error('Error in getInitialSession:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    getInitialSession();
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Update profile if user signs in and profile is missing data
+        // Handle profile creation/update on sign in
         if (session?.user && event === 'SIGNED_IN') {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, first_name, last_name')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (!profile?.first_name) {
-            await supabase
-              .from('profiles')
-              .update({ 
-                first_name: session.user.user_metadata?.first_name || null,
-                last_name: session.user.user_metadata?.last_name || null
-              })
-              .eq('id', session.user.id);
-          }
+          setTimeout(async () => {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('id, first_name, last_name, role')
+                .eq('id', session.user.id)
+                .single();
+              
+              if (!profile?.first_name) {
+                await supabase
+                  .from('profiles')
+                  .update({ 
+                    first_name: session.user.user_metadata?.first_name || null,
+                    last_name: session.user.user_metadata?.last_name || null,
+                    role: session.user.user_metadata?.role || 'patient'
+                  })
+                  .eq('id', session.user.id);
+              }
+            } catch (error) {
+              console.error('Error updating profile:', error);
+            }
+          }, 100);
         }
         
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string, role: 'patient' | 'doctor' = 'patient') => {

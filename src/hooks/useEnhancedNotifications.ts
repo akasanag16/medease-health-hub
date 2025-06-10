@@ -1,73 +1,24 @@
-import { useRealTimeManager } from './useRealTimeManager';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'warning' | 'success' | 'error';
-  priority: 'low' | 'medium' | 'high';
-  is_read: boolean;
-  related_table: string | null;
-  related_id: string | null;
-  created_at: string;
-  read_at: string | null;
-}
+import { useSimpleNotifications } from './useSimpleNotifications';
 
 export const useEnhancedNotifications = () => {
-  const { data, stats, loading } = useRealTimeManager();
-  const { user } = useAuth();
-
-  const markAsRead = async (notificationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ 
-          is_read: true, 
-          read_at: new Date().toISOString() 
-        })
-        .eq('id', notificationId);
-
-      if (error) {
-        console.error('Error marking notification as read:', error);
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error('Error:', error);
-      return false;
-    }
-  };
+  const { notifications, loading, unreadCount, markAsRead } = useSimpleNotifications();
 
   const markAllAsRead = async () => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ 
-          is_read: true, 
-          read_at: new Date().toISOString() 
-        })
-        .eq('user_id', user?.id)
-        .eq('is_read', false);
-
-      if (error) {
-        console.error('Error marking all notifications as read:', error);
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error('Error:', error);
-      return false;
+    // For now, just mark visible notifications as read one by one
+    const unreadNotifications = notifications.filter(n => !n.is_read);
+    for (const notification of unreadNotifications) {
+      await markAsRead(notification.id);
     }
+    return true;
   };
 
   return {
-    notifications: data.notifications,
+    notifications,
     loading,
-    unreadCount: stats.unreadNotifications,
+    unreadCount,
     markAsRead,
     markAllAsRead,
-    refetchNotifications: () => {} // Will be handled by centralized manager
+    refetchNotifications: () => {}
   };
 };
