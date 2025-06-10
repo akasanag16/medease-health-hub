@@ -43,35 +43,35 @@ const patientMenuItems = [
   },
   {
     title: "Medical Reports",
-    url: "#medical-reports",
+    url: "#reports",
     icon: FileText,
   },
   {
     title: "Upload Documents",
-    url: "#upload",
+    url: "#documents",
     icon: Upload,
   },
 ]
 
 const doctorMenuItems = [
   {
-    title: "Doctor Dashboard",
+    title: "Dashboard",
     url: "#dashboard",
-    icon: Users,
+    icon: Home,
   },
   {
-    title: "Patient Appointments",
+    title: "Appointments",
     url: "#appointments",
     icon: Calendar,
   },
   {
-    title: "Patient Lab Results",
+    title: "Lab Results",
     url: "#lab-results",
     icon: TestTube,
   },
   {
     title: "Medical Reports",
-    url: "#medical-reports",
+    url: "#reports",
     icon: FileText,
   },
 ]
